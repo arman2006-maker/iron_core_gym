@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IronCore Gym — DBMS Capstone Project (ETCCMS304)</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-badge">IC</div>
+        <div>
+          <h1>IronCore Gym <span class="tag-pill">ETCCMS304</span></h1>
+          <p class="subtitle">Gym Management &amp; Membership Analytics System &bull; B.Tech. CSE Sem III</p>
+        </div>
+      </div>
+
+      <div class="topbar-controls">
+        <div class="role-box">
+          <label for="roleSelect">RBAC Role</label>
+          <select id="roleSelect">
+            <option value="admin">admin (root@localhost)</option>
+            <option value="manager">manager (manager_user)</option>
+            <option value="front_desk">front_desk (front_desk_user)</option>
+            <option value="trainer">trainer (trainer_user)</option>
+            <option value="member">member (member_user)</option>
+          </select>
+        </div>
+        <button id="resetDbBtn" class="btn btn-ghost" title="Restore initial 375-row capstone state">
+          Reset 375 Rows
+        </button>
+      </div>
+    </header>
+
+    <nav class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" data-tab="overview">1. Overview &amp; Views</button>
+      <button class="nav-tab" data-tab="operations">2. Member &amp; Ops App</button>
+      <button class="nav-tab" data-tab="schema">3. ER Diagram &amp; BCNF</button>
+      <button class="nav-tab" data-tab="sql">4. SQL Lab &amp; Indexes</button>
+      <button class="nav-tab" data-tab="labs">5. Transactions &amp; RBAC</button>
+      <button class="nav-tab" data-tab="etl">6. Star Schema ETL &amp; NoSQL</button>
+    </nav>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <main class="main-content">
+      <!-- TAB 1: OVERVIEW -->
+      <section id="tab-overview" class="tab-panel active">
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Monthly Revenue &amp; Running Total</h2>
+                <p class="muted">Slide 7 CTE + <code>SUM(rev) OVER (ORDER BY ym)</code></p>
+              </div>
+              <span class="badge badge-accent" id="revTotalBadge">₹0</span>
+            </div>
+            <div id="revenueChart" class="chart-box"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>6 Business Rules &amp; Trigger Guardrails</h2>
+                <p class="muted">Enforced at database trigger &amp; constraint level</p>
+              </div>
+              <button id="testAutoExpireBtn" class="btn btn-sm btn-outline">Test Auto-Expire (sub #21)</button>
+            </div>
+            <ul class="rules-list">
+              <li><span class="rule-num">1</span><span>A member can book only with an <strong>ACTIVE</strong> subscription</span></li>
+              <li><span class="rule-num">2</span><span>Bookings can never exceed a session's capacity (<code>trg_block_full_class</code>)</span></li>
+              <li><span class="rule-num">3</span><span>One member cannot hold two overlapping bookings</span></li>
+              <li><span class="rule-num">4</span><span>Each payment belongs to exactly one subscription (<code>CHECK amount &gt; 0</code>)</span></li>
+              <li><span class="rule-num">5</span><span>Expired plans are auto-marked by <code>trg_auto_expire_subscription</code></span></li>
+              <li><span class="rule-num">6</span><span>Equipment under maintenance cannot be issued</span></li>
+            </ul>
+            <div id="expireResultBox" class="terminal-mini hidden"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Class Session Load (<code>v_class_load</code>)</h2>
+                <p class="muted">Live occupancy across 25 scheduled sessions</p>
+              </div>
+            </div>
+            <div id="classLoadList" class="scroll-list"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Pending Dues (<code>v_dues_pending</code>) &amp; Audit Log</h2>
+                <p class="muted">Live views &amp; trigger-populated audit trail</p>
+              </div>
+            </div>
+            <div class="split-tables">
+              <div>
+                <h3 class="subhead">Top Dues Pending</h3>
+                <div id="duesPendingTable" class="table-wrap compact"></div>
+              </div>
+              <div>
+                <h3 class="subhead">Recent <code>audit_log</code> Events</h3>
+                <div id="auditLogTable" class="table-wrap compact"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: MEMBER & OPS APP -->
+      <section id="tab-operations" class="tab-panel">
+        <div class="ops-header card">
+          <div class="ops-member-pick">
+            <label for="memberSelect">Active Member Session (<code>gym_app.py</code>)</label>
+            <select id="memberSelect"></select>
+          </div>
+          <div id="memberBanner" class="member-banner"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Classes with Free Seats &amp; Booking</h2>
+                <p class="muted">Triggers check active plan, capacity &amp; overlap</p>
+              </div>
+              <label class="toggle-inline">
+                <input type="checkbox" id="waitlistFallbackChk" checked />
+                <span>Auto-waitlist if full</span>
+              </label>
+            </div>
+            <div id="bookableSessionsTable" class="table-wrap"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Pay Dues &amp; Upcoming Bookings</h2>
+                <p class="muted">Cancel booking auto-promotes waitlist #1</p>
+              </div>
+            </div>
+            <form id="paymentForm" class="inline-form">
+              <input type="number" id="payAmountInput" placeholder="Amount (₹)" min="1" step="50" required />
+              <select id="payModeSelect">
+                <option value="UPI">UPI</option>
+                <option value="CARD">CARD</option>
+                <option value="CASH">CASH</option>
+                <option value="NETBANKING">NETBANKING</option>
+              </select>
+              <button type="submit" class="btn btn-primary">Pay Dues</button>
+            </form>
+
+            <h3 class="subhead">Confirmed Upcoming Bookings</h3>
+            <div id="memberBookingsTable" class="table-wrap compact"></div>
+
+            <h3 class="subhead">Member Waitlist</h3>
+            <div id="memberWaitlistTable" class="table-wrap compact"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Equipment Inventory &amp; Maintenance Lock</h2>
+                <p class="muted">Business Rule 6 blocks issuing MAINTENANCE items</p>
+              </div>
+            </div>
+            <div id="equipmentTable" class="table-wrap"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Trainer Attendance Check-In &amp; Plan Renewal</h2>
+                <p class="muted">Log check-in or renew expired subscriptions</p>
+              </div>
+            </div>
+            <div class="ops-actions-stack">
+              <div class="action-card">
+                <h4>Quick Check-In (Trainer / Front Desk)</h4>
+                <div class="inline-form">
+                  <select id="attMemberSelect"></select>
+                  <button id="checkInBtn" class="btn btn-primary">Record Check-In (+75m)</button>
+                </div>
+              </div>
+              <div class="action-card">
+                <h4>Renew / Upgrade Plan (<code>renew_plan</code>)</h4>
+                <div class="inline-form">
+                  <select id="renewPlanSelect">
+                    <option value="1">Monthly (30d &bull; ₹2,000)</option>
+                    <option value="2">Quarterly (90d &bull; ₹5,500)</option>
+                    <option value="3">Half-Yearly (180d &bull; ₹9,500)</option>
+                    <option value="4">Annual (365d &bull; ₹15,000)</option>
+                  </select>
+                  <button id="renewPlanBtn" class="btn btn-outline">Renew Active Member</button>
+                </div>
+              </div>
+              <div id="opsFeedbackTerminal" class="terminal-mini hidden"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: ER DIAGRAM & BCNF -->
+      <section id="tab-schema" class="tab-panel">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Interactive ER/EER Diagram (15 Tables &bull; 375 Seed Rows)</h2>
+              <p class="muted">Click any entity box to inspect its live schema &amp; rows &bull; EER: Staff &rarr; Trainer / Front Desk</p>
+            </div>
+            <span class="badge badge-green" id="totalRowBadge">15 Tables &bull; 375 Rows</span>
+          </div>
+          <div class="er-svg-wrap" id="erDiagramWrap"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 id="selectedTableTitle">Table Inspector: <code>member</code></h2>
+                <p class="muted" id="selectedTableMeta">Click a table in the ER diagram or list</p>
+              </div>
+              <div id="tableCountChips" class="chip-wrap"></div>
+            </div>
+            <div id="tableBrowserWrap" class="table-wrap"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Functional Dependencies &amp; BCNF Normalization</h2>
+                <p class="muted">Slide 5: eliminating partial &amp; transitive dependencies</p>
+              </div>
+            </div>
+            <div class="norm-steps">
+              <div class="norm-card">
+                <span class="norm-badge">0NF</span>
+                <div><strong>One flat 'gym register' sheet</strong><p>Repeating phone numbers, mixed member/plan/session attributes.</p></div>
+              </div>
+              <div class="norm-card">
+                <span class="norm-badge">1NF</span>
+                <div><strong>Atomic values</strong><p>Multi-valued phone attributes split out; primary keys assigned.</p></div>
+              </div>
+              <div class="norm-card">
+                <span class="norm-badge">2NF</span>
+                <div><strong>Full functional dependency</strong><p>Plan &amp; class details moved out of composite keys: <code>Plan_ID &rarr; plan_name, duration, fee</code>.</p></div>
+              </div>
+              <div class="norm-card">
+                <span class="norm-badge">3NF</span>
+                <div><strong>No transitive dependencies</strong><p>Separated <code>trainer_id &rarr; speciality</code> and <code>branch_id &rarr; city</code> from session/member tables.</p></div>
+              </div>
+              <div class="norm-card highlight">
+                <span class="norm-badge">BCNF</span>
+                <div><strong>Every determinant is a candidate key</strong><p>Unique constraint on <code>(room, session_start) &rarr; session_id</code> prevents room double-booking.</p></div>
+              </div>
+            </div>
+            <div class="fd-box">
+              <strong>Key Functional Dependencies:</strong>
+              <code>Member_ID &rarr; name, phone, email, DOB</code> &bull;
+              <code>Plan_ID &rarr; plan_name, duration, fee</code> &bull;
+              <code>Session_ID &rarr; class, trainer, start, capacity</code> &bull;
+              <code>(Member_ID, Session_ID) &rarr; status, booked_at</code> &bull;
+              <code>Payment_ID &rarr; amount, mode, date, sub_id</code>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: SQL QUERY LAB & INDEXES -->
+      <section id="tab-sql" class="tab-panel">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Slide 7 Complex SQL Query Set (Live Execution)</h2>
+              <p class="muted">INNER JOIN, Subquery, RANK()/DENSE_RANK(), CTE + SUM() OVER, EXCEPT, Correlated Subquery</p>
+            </div>
+          </div>
+          <div id="presetButtons" class="preset-grid"></div>
+          <div class="sql-workspace">
+            <textarea id="sqlEditor" rows="4" spellcheck="false"></textarea>
+            <div class="sql-actions">
+              <button id="runSqlBtn" class="btn btn-primary">Execute Query</button>
+              <span id="sqlStatusText" class="muted"></span>
+            </div>
+            <div id="sqlResultTable" class="table-wrap"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Index Performance Lab (<code>idx_att_in</code> EXPLAIN Before vs After)</h2>
+              <p class="muted">Slide 8: Full Table Scan (<code>SCAN attendance</code>) vs Index Lookup (<code>SEARCH attendance USING INDEX idx_att_in</code>)</p>
+            </div>
+            <button id="runExplainBtn" class="btn btn-outline">Run EXPLAIN Benchmark</button>
+          </div>
+          <div class="grid-2" id="explainComparison"></div>
+        </div>
+      </section>
+
+      <!-- TAB 5: TRANSACTIONS, CONCURRENCY, RBAC & SQLI -->
+      <section id="tab-labs" class="tab-panel">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Two-Session Concurrency Demo (<code>FOR UPDATE</code>)</h2>
+                <p class="muted">Slide 9: Zumba #99 (19/20) &mdash; Session A locks &amp; takes last seat; Session B waits &amp; joins waitlist</p>
+              </div>
+              <button id="runConcurrencyBtn" class="btn btn-primary">Run Live 2-Thread Race</button>
+            </div>
+            <div id="concurrencyOutput" class="terminal-log">Click "Run Live 2-Thread Race" to spawn Session A and Session B against SQLite.</div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Transaction &amp; <code>SAVEPOINT sp_pay</code> Rollback</h2>
+                <p class="muted">Slide 9: Failed negative payment rolls back to savepoint without losing valid payment</p>
+              </div>
+              <button id="runSavepointBtn" class="btn btn-primary">Run Savepoint Demo</button>
+            </div>
+            <div id="savepointOutput" class="terminal-log">Click "Run Savepoint Demo" to execute START TRANSACTION &rarr; SAVEPOINT &rarr; ROLLBACK TO sp_pay &rarr; COMMIT.</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>RBAC: Roles, <code>GRANT / REVOKE</code> &amp; Access Denied</h2>
+                <p class="muted">Slide 10: Live privilege toggle &amp; SQL command verification</p>
+              </div>
+            </div>
+            <div class="rbac-controls">
+              <div class="inline-form">
+                <select id="rbacTestRole">
+                  <option value="member">member (member_user)</option>
+                  <option value="front_desk">front_desk (front_desk_user)</option>
+                  <option value="trainer">trainer (trainer_user)</option>
+                  <option value="manager">manager (manager_user)</option>
+                  <option value="admin">admin (root)</option>
+                </select>
+                <select id="rbacTestAction">
+                  <option value="select_payment">SELECT * FROM payment</option>
+                  <option value="insert_payment">INSERT INTO payment</option>
+                  <option value="delete_member">DELETE FROM member</option>
+                  <option value="select_gym_class">SELECT class_name FROM gym_class</option>
+                </select>
+                <button id="runRbacTestBtn" class="btn btn-outline">Test Query</button>
+              </div>
+              <div class="grant-row">
+                <span><code>role_front_desk</code> &rarr; <code>INSERT ON gym.payment</code>:</span>
+                <button id="toggleFrontDeskPayBtn" class="btn btn-sm btn-primary">Granted (Click to REVOKE)</button>
+              </div>
+            </div>
+            <div id="rbacOutput" class="terminal-log">Run a query test or toggle GRANT/REVOKE above.</div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>SQL Injection Simulator (<code>sqli_demo.py</code>)</h2>
+                <p class="muted">Slide 10: Unsafe string concatenation vs Parameterized query</p>
+              </div>
+            </div>
+            <div class="inline-form">
+              <input type="text" id="sqliInput" value="x' OR '1'='1" />
+              <button id="runSqliBtn" class="btn btn-primary">Test Payload</button>
+            </div>
+            <div id="sqliOutput" class="terminal-log">Click "Test Payload" to compare leaked rows vs parameterized execution.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: ETL STAR SCHEMA & NOSQL -->
+      <section id="tab-etl" class="tab-panel">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>OLTP <code>gym</code> &rarr; Star Schema <code>gym_dw</code> ETL</h2>
+                <p class="muted">Slide 11: <code>dim_member</code>, <code>dim_plan</code>, <code>dim_date</code>, <code>fact_attendance</code></p>
+              </div>
+              <button id="runEtlBtn" class="btn btn-primary">Run Live ETL Pipeline</button>
+            </div>
+            <div id="etlSummary" class="etl-summary"></div>
+            <h3 class="subhead">Analytical Report: Visits &amp; Avg Minutes by Plan</h3>
+            <div id="etlReportTable" class="table-wrap compact"></div>
+            <h3 class="subhead">Sample Star Schema Fact Join</h3>
+            <div id="etlFactsTable" class="table-wrap compact"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>NoSQL Extension: Workout Logs &amp; Trainer Notes</h2>
+                <p class="muted">Slide 11: MongoDB-style JSON documents + aggregation pipeline</p>
+              </div>
+            </div>
+            <form id="nosqlForm" class="nosql-form">
+              <select id="nosqlMemberSelect"></select>
+              <input type="text" id="nosqlType" placeholder="Workout type (e.g. HIIT)" value="CrossFit" required />
+              <input type="text" id="nosqlExercise" placeholder="Exercise (e.g. Deadlift)" value="Front Squat" required />
+              <input type="number" id="nosqlCals" placeholder="Calories" value="480" required />
+              <input type="number" id="nosqlRpe" placeholder="RPE (1-10)" step="0.5" min="1" max="10" value="8.5" required />
+              <input type="text" id="nosqlNote" placeholder="Trainer note" value="Great barbell speed and depth." required />
+              <button type="submit" class="btn btn-primary">Insert Document</button>
+            </form>
+            <h3 class="subhead">Aggregation Pipeline (<code>$group</code> by <code>workout_type</code>)</h3>
+            <div id="nosqlAggTable" class="table-wrap compact"></div>
+            <h3 class="subhead">Stored JSON Documents</h3>
+            <div id="nosqlDocsList" class="docs-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

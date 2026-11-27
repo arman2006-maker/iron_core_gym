@@ -1,0 +1,112 @@
+[
+  {
+    "_id": "wl_6741a01",
+    "member_id": 5,
+    "member_name": "Reyansh Khan",
+    "trainer_id": 2,
+    "trainer_name": "Amit Tyagi",
+    "date": "2026-11-24",
+    "workout_type": "CrossFit",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 4,
+        "reps": 6,
+        "weight_kg": 110
+      },
+      {
+        "name": "Box Jumps",
+        "sets": 4,
+        "reps": 15,
+        "weight_kg": 0
+      },
+      {
+        "name": "Kettlebell Swings",
+        "sets": 3,
+        "reps": 20,
+        "weight_kg": 24
+      }
+    ],
+    "rpe": 8.5,
+    "calories_burned": 540,
+    "trainer_note": "Solid hip hinge form; ready to progress deadlift to 115 kg next week."
+  },
+  {
+    "_id": "wl_6741a02",
+    "member_id": 1,
+    "member_name": "Aarav Yadav",
+    "trainer_id": 1,
+    "trainer_name": "Simran Kaur",
+    "date": "2026-11-25",
+    "workout_type": "Zumba & Cardio",
+    "exercises": [
+      {
+        "name": "High-Tempo Salsa Intervals",
+        "sets": 5,
+        "reps": 1,
+        "duration_min": 8
+      },
+      {
+        "name": "RowErg Sprints",
+        "sets": 4,
+        "reps": 500,
+        "unit": "meters"
+      }
+    ],
+    "rpe": 7.5,
+    "calories_burned": 490,
+    "trainer_note": "Consistent aerobic zone 4 pace; hydration breaks timed well."
+  },
+  {
+    "_id": "wl_6741a03",
+    "member_id": 12,
+    "member_name": "Ananya Iyer",
+    "trainer_id": 4,
+    "trainer_name": "Priya Nair",
+    "date": "2026-11-25",
+    "workout_type": "Pilates",
+    "exercises": [
+      {
+        "name": "Reformer Hundred",
+        "sets": 3,
+        "reps": 100,
+        "weight_kg": 15
+      },
+      {
+        "name": "Single-Leg Stretch",
+        "sets": 3,
+        "reps": 12,
+        "weight_kg": 0
+      }
+    ],
+    "rpe": 6.5,
+    "calories_burned": 280,
+    "trainer_note": "Thoracic mobility improved; keep neutral spine on roll-downs."
+  },
+  {
+    "_id": "wl_6741a04",
+    "member_id": 6,
+    "member_name": "Arjun Mehta",
+    "trainer_id": 3,
+    "trainer_name": "Vikram Chauhan",
+    "date": "2026-11-26",
+    "workout_type": "HIIT",
+    "exercises": [
+      {
+        "name": "Assault Bike Tabata",
+        "sets": 8,
+        "reps": 20,
+        "unit": "sec"
+      },
+      {
+        "name": "Battle Rope Slams",
+        "sets": 4,
+        "reps": 30,
+        "unit": "sec"
+      }
+    ],
+    "rpe": 9.0,
+    "calories_burned": 610,
+    "trainer_note": "Peak heart rate 178 bpm; recovery dropped 32 bpm in 60s."
+  }
+]
